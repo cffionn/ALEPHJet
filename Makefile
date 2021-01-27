@@ -7,13 +7,13 @@ endif
 
 ROOT=`root-config --cflags --glibs`
 FASTJET=`fastjet-config --cxxflags --libs`
-INCLUDES=-I/usr/include -I$(PWD) -I$(FASTJETPATH)
+INCLUDES=-I/usr/include -I$(PWD) -I$(FASTJETPATH)include
 
 MKDIR_BIN = mkdir -p $(PWD)/bin
 MKDIR_PDFDIR = mkdir -p $(PWD)/pdfDir
 MKDIR_OUTPUT = mkdir -p $(PWD)/output
 
-all: mkdirBin mkdirOutput mkdirPdfdir bin/processCleanedAleph.exe bin/createAlephJet.exe bin/exchange.exe
+all: mkdirBin mkdirOutput mkdirPdfdir bin/processCleanedAleph.exe bin/createAlephJet.exe
 
 mkdirBin:
 	$(MKDIR_BIN)
@@ -30,9 +30,6 @@ bin/processCleanedAleph.exe: src/processCleanedAleph.C
 
 bin/createAlephJet.exe: src/createAlephJet.C
 	$(CXX) $(CXXFLAGS) src/createAlephJet.C $(ROOT) $(FASTJET) $(INCLUDES) -lm -lpthread -lX11 -o bin/createAlephJet.exe
-
-bin/exchange.exe: src/exchange.C
-	$(CXX) $(CXXFLAGS) src/exchange.C -o bin/exchange.exe
 
 clean:
 	rm *~ || true
