@@ -126,9 +126,14 @@ int processCleanedAleph(const std::string inFileName)
 
   UChar_t nPart_;
   const UChar_t nPartMax_ = 255;
-  Float_t px_[nPartMax_], py_[nPartMax_], pz_[nPartMax_], m_[nPartMax_];
+  Float_t px_[nPartMax_], py_[nPartMax_], pz_[nPartMax_], m_[nPartMax_], dEdXCode_[nPartMax_], dEdXElectron_[nPartMax_], dEdXPion_[nPartMax_], dEdXKaon_[nPartMax_], dEdXProton_[nPartMax_]; 
   Short_t chg_[nPartMax_];
   UChar_t pwflag_[nPartMax_];
+
+  UChar_t nV0_;
+  Float_t v0Vx_[nPartMax_], v0Vy_[nPartMax_], v0Vz_[nPartMax_];
+  Int_t v0TrkPos1_[nPartMax_], v0TrkPos2_[nPartMax_];
+  Float_t v0Px1_[nPartMax_], v0Py1_[nPartMax_], v0Pz1_[nPartMax_], v0Px2_[nPartMax_], v0Py2_[nPartMax_], v0Pz2_[nPartMax_];
   
   TFile* outFile_p = new TFile(outFileName.c_str(), "RECREATE");
   TTree* alephTree_p = new TTree("alephTree", "");
@@ -145,48 +150,116 @@ int processCleanedAleph(const std::string inFileName)
   alephTree_p->Branch("m", m_, "m[nPart]/F");
   alephTree_p->Branch("chg", chg_, "chg[nPart]/S");
   alephTree_p->Branch("pwflag", pwflag_, "pwflag[nPart]/b");
+  alephTree_p->Branch("dEdXCode", dEdXCode_, "dEdXCode[nPart]/F");
+  alephTree_p->Branch("dEdXElectron", dEdXElectron_, "dEdXElectron[nPart]/F");
+  alephTree_p->Branch("dEdXPion", dEdXPion_, "dEdXPion[nPart]/F");
+  alephTree_p->Branch("dEdXKaon", dEdXKaon_, "dEdXKaon[nPart]/F");
+  alephTree_p->Branch("dEdXProton", dEdXProton_, "dEdXProton[nPart]/F");
+
+  alephTree_p->Branch("nV0", &nV0_, "nV0/b");
+
+  alephTree_p->Branch("v0Vx", v0Vx_, "v0Vx[nV0]/F");
+  alephTree_p->Branch("v0Vy", v0Vy_, "v0Vy[nV0]/F");
+  alephTree_p->Branch("v0Vz", v0Vz_, "v0Vz[nV0]/F");
+  
+  alephTree_p->Branch("v0Px1", v0Px1_, "v0Px1[nV0]/F");
+  alephTree_p->Branch("v0Py1", v0Py1_, "v0Py1[nV0]/F");
+  alephTree_p->Branch("v0Pz1", v0Pz1_, "v0Pz1[nV0]/F");
+  alephTree_p->Branch("v0TrkPos1", v0TrkPos1_, "v0TrkPos1[nV0]/I");
+
+  alephTree_p->Branch("v0Px2", v0Px2_, "v0Px2[nV0]/F");
+  alephTree_p->Branch("v0Py2", v0Py2_, "v0Py2[nV0]/F");
+  alephTree_p->Branch("v0Pz2", v0Pz2_, "v0Pz2[nV0]/F");
+  alephTree_p->Branch("v0TrkPos2", v0TrkPos2_, "v0TrkPos2[nV0]/I");
+  
 
   std::ifstream inFile(inFileName.c_str());
   std::string tempStr;
 
-  bool lastLineEmpty = false;
+  bool prevLineEmpty = false;
   bool endOnFill = false;
+
+  bool hitEighteen = true;
   while(std::getline(inFile, tempStr)){
     std::vector<std::string> line = stringToVect(cleanString(tempStr));
+
+    /*
+    std::cout << line.size() << ", " << std::endl;
+    if(line.size() == 20){
+      for(unsigned int i = 0; i < line.size(); ++i){
+	std::cout << "'" << line[i] << "' ";       
+      }
+      std::cout << std::endl;
+
+      return 1;
+    }
+    */
     
     if(line.size() == 0){
-      if(lastLineEmpty){
+      if(prevLineEmpty){
 	endOnFill = true;
-	break;
+      	break;
       }
       else alephTree_p->Fill();
 
-      lastLineEmpty = true;
+      prevLineEmpty = true;
     }
     else if(line.size() == 3){
-      lastLineEmpty = false;
+      prevLineEmpty = false;
       run_ = (UChar_t)(std::stoi(line.at(0)));
       evt_ = (UChar_t)(std::stoi(line.at(1)));
       ecm_ = std::stof(line.at(2));
       nPart_ = 0;
+      nV0_ = 0;
+      hitEighteen = false;
     }
     else if(line.size() == 5){
-      lastLineEmpty = false;
+      prevLineEmpty = false;
       continue;
     }
-    else if(line.size() == 11){
-      lastLineEmpty = false;
+    else if(line.size() == 18){
+      prevLineEmpty = false;
       px_[nPart_] = std::stof(line.at(0));
       py_[nPart_] = std::stof(line.at(1));
       pz_[nPart_] = std::stof(line.at(2));
       m_[nPart_] = std::stof(line.at(3));
       chg_[nPart_] = (Short_t)(std::stoi(line.at(4)));
       pwflag_[nPart_] = (UChar_t)(std::stoi(line.at(5)));
+
+      dEdXCode_[nPart_] = std::stof(line.at(13));
+      dEdXElectron_[nPart_] = std::stof(line.at(14));
+      dEdXPion_[nPart_] = std::stof(line.at(15));
+      dEdXKaon_[nPart_] = std::stof(line.at(16));
+      dEdXProton_[nPart_] = std::stof(line.at(17));
+      
       ++nPart_;
+
+      hitEighteen = true;
     }
+    else if(line.size() == 6 && hitEighteen){
+      v0Vx_[nV0_] = std::stof(line.at(0));
+      v0Vy_[nV0_] = std::stof(line.at(1));
+      v0Vz_[nV0_] = std::stof(line.at(2));
+
+      std::getline(inFile, tempStr);
+      line = stringToVect(cleanString(tempStr));
+      v0TrkPos1_[nV0_] = std::stoi(line.at(0));
+      v0Px1_[nV0_] = std::stof(line.at(1));
+      v0Py1_[nV0_] = std::stof(line.at(2));
+      v0Pz1_[nV0_] = std::stof(line.at(3));
+
+      std::getline(inFile, tempStr);
+      line = stringToVect(cleanString(tempStr));
+      v0TrkPos2_[nV0_] = std::stoi(line.at(0));
+      v0Px2_[nV0_] = std::stof(line.at(1));
+      v0Py2_[nV0_] = std::stof(line.at(2));
+      v0Pz2_[nV0_] = std::stof(line.at(3));
+      
+      ++nV0_;
+    }    
   }
   
-  if(!endOnFill) alephTree_p->Fill();
+  //  if(endOnFill) alephTree_p->Fill();
 
   inFile.close();
 
